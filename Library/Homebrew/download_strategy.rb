@@ -533,18 +533,20 @@ end
 #
 # @api public
 class CurlGitHubPackagesDownloadStrategy < CurlDownloadStrategy
-  attr_accessor :checksum, :name
+  attr_accessor :checksum, :name, :tag
 
   private
 
   def _fetch(url:, resolved_url:)
     raise "Empty checksum" if checksum.blank?
     raise "Empty name" if name.blank?
+    raise "Empty tag" if tag.blank?
 
     _, org, repo, = *url.match(GitHubPackages::URL_REGEX)
+    repo.delete_prefix!("bottles-")
 
     token = "Authorization: Bearer #{Base64.encode64("homebrew")}".chomp
-    blob_url = "https://ghcr.io/v2/#{org}/#{repo}/#{name}/blobs/sha256:#{checksum}"
+    blob_url = "https://ghcr.io/v2/#{org}/#{repo}/#{name}/#{tag}/blobs/sha256:#{checksum}"
     curl_download(blob_url, "--header", token, to: temporary_path, verbose: true)
   end
 end

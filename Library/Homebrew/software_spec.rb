@@ -290,7 +290,7 @@ class Bottle
 
   extend Forwardable
 
-  attr_reader :name, :resource, :prefix, :cellar, :rebuild
+  attr_reader :name, :resource, :prefix, :cellar, :rebuild, :tag
 
   def_delegators :resource, :url, :verify_download_integrity
   def_delegators :resource, :cached_download, :clear_cache
@@ -302,7 +302,7 @@ class Bottle
     @resource.specs[:bottle] = true
     @spec = spec
 
-    checksum, tag, cellar = spec.checksum_for(Utils::Bottles.tag)
+    checksum, @tag, cellar = spec.checksum_for(Utils::Bottles.tag)
 
     filename = Filename.create(formula, tag, spec.rebuild)
     @resource.url("#{spec.root_url}/#{filename.bintray}",
@@ -326,6 +326,7 @@ class Bottle
     elsif @resource.download_strategy == CurlGitHubPackagesDownloadStrategy
       @resource.downloader.name = @name
       @resource.downloader.checksum = @resource.checksum.hexdigest
+      @resource.downloader.tag = tag
     end
     @resource.fetch(verify_download_integrity: verify_download_integrity)
   end
