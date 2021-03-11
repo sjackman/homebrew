@@ -13,6 +13,8 @@ require "mechanize/http/content_disposition_parser"
 
 require "utils/curl"
 
+require "github_packages"
+
 # @abstract Abstract superclass for all download strategies.
 #
 # @api private
@@ -524,6 +526,26 @@ class CurlDownloadStrategy < AbstractFileDownloadStrategy
   def curl(*args, **options)
     args << "--connect-timeout" << "15" unless mirrors.empty?
     super(*_curl_args, *args, **_curl_opts, **command_output_options, **options)
+  end
+end
+
+# Strategy for downloading a file from an GitHub Packages URL.
+#
+# @api public
+class CurlGitHubPackagesDownloadStrategy < CurlDownloadStrategy
+  attr_accessor :checksum, :name
+
+  private
+
+  def _fetch(url:, resolved_url:)
+    raise "Empty checksum" if checksum.blank?
+    raise "Empty name" if name.blank?
+
+    _, org, repo, = *url.match(GitHubPackages::URL_REGEX)
+
+    token = "Authorization: Bearer #{Base64.encode64("homebrew")}".chomp
+    blob_url = "https://ghcr.io/v2/#{org}/#{repo}/#{name}/blobs/sha256:#{checksum}"
+    curl_download(blob_url, "--header", token, to: temporary_path, verbose: true)
   end
 end
 
@@ -1243,6 +1265,8 @@ class DownloadStrategyDetector
 
   def self.detect_from_url(url)
     case url
+    when GitHubPackages::URL_REGEX
+      CurlGitHubPackagesDownloadStrategy
     when %r{^https?://github\.com/[^/]+/[^/]+\.git$}
       GitHubGitDownloadStrategy
     when %r{^https?://.+\.git$},

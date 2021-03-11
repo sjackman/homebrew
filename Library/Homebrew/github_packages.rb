@@ -57,7 +57,8 @@ class GitHubPackages
           "--username", user,
           "--password", token,
           "--manifest-config", "/dev/null:application/vnd.homebrew.brew.config",
-          "#{local_file}:application/tar+gzip"])
+          "#{local_file}:application/tar+gzip"
+        ])
       end
     end
   end
